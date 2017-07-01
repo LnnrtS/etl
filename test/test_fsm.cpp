@@ -57,12 +57,12 @@ namespace
   };
 
   //***********************************
-  class Start : public etl::fsm_event<EventId::START>
+  class Start : public etl::message<EventId::START>
   {
   };
 
   //***********************************
-  class Stop : public etl::fsm_event<EventId::STOP>
+  class Stop : public etl::message<EventId::STOP>
   {
   public:
 
@@ -73,7 +73,7 @@ namespace
   };
 
   //***********************************
-  class SetSpeed : public etl::fsm_event<EventId::SET_SPEED>
+  class SetSpeed : public etl::message<EventId::SET_SPEED>
   {
   public:
 
@@ -83,7 +83,7 @@ namespace
   };
 
   //***********************************
-  class Stopped : public etl::fsm_event<EventId::STOPPED>
+  class Stopped : public etl::message<EventId::STOPPED>
   {
   };
 
@@ -174,14 +174,14 @@ namespace
     }
 
     //***********************************
-    etl::fsm_state_id_t on_event(const Start& event)
+    etl::fsm_state_id_t on_event(etl::imessage_router& sender, const Start& event)
     {
       ++common.startCount;
       return StateId::RUNNING;
     }
 
     //***********************************
-    etl::fsm_state_id_t on_event_unknown(const etl::ifsm_event& event)
+    etl::fsm_state_id_t on_event_unknown(etl::imessage_router& sender, const etl::imessage& event)
     {
       ++common.unknownCount;
       return STATE_ID;
@@ -210,7 +210,7 @@ namespace
     }
 
     //***********************************
-    etl::fsm_state_id_t on_event(const Stop& event)
+    etl::fsm_state_id_t on_event(etl::imessage_router& sender, const Stop& event)
     {
       ++common.stopCount;
 
@@ -225,7 +225,7 @@ namespace
     }
 
     //***********************************
-    etl::fsm_state_id_t on_event(const SetSpeed& event)
+    etl::fsm_state_id_t on_event(etl::imessage_router& sender, const SetSpeed& event)
     {
       ++common.setSpeedCount;
       common.SetSpeed(event.speed);
@@ -233,7 +233,7 @@ namespace
     }
 
     //***********************************
-    etl::fsm_state_id_t on_event_unknown(const etl::ifsm_event& event)
+    etl::fsm_state_id_t on_event_unknown(etl::imessage_router& sender, const etl::imessage& event)
     {
       ++common.unknownCount;
       return STATE_ID;
@@ -261,14 +261,14 @@ namespace
     }
 
     //***********************************
-    etl::fsm_state_id_t on_event(const Stopped& event)
+    etl::fsm_state_id_t on_event(etl::imessage_router& source, const Stopped& event)
     {
       ++common.stoppedCount;
       return StateId::IDLE;
     }
 
     //***********************************
-    etl::fsm_state_id_t on_event_unknown(const etl::ifsm_event& event)
+    etl::fsm_state_id_t on_event_unknown(etl::imessage_router& source, const etl::imessage& event)
     {
       ++common.unknownCount;
       return STATE_ID;
@@ -296,6 +296,7 @@ namespace
 
   private:
 
+    // The states.
     Idle        idle;
     Running     running;
     WindingDown windingDown;
@@ -336,9 +337,9 @@ namespace
       CHECK_EQUAL(0, motorControl.common.unknownCount);
 
       // Send unhandled events.
-      motorControl.on_event(Stop());
-      motorControl.on_event(Stopped());
-      motorControl.on_event(SetSpeed(10));
+      motorControl.receive(etl::null_message_router(), Stop());
+      motorControl.receive(etl::null_message_router(), Stopped());
+      motorControl.receive(etl::null_message_router(), SetSpeed(10));
 
       CHECK_EQUAL(StateId::IDLE, motorControl.get_state_id());
       CHECK_EQUAL(StateId::IDLE, motorControl.get_state().get_state_id());
@@ -352,7 +353,7 @@ namespace
       CHECK_EQUAL(3, motorControl.common.unknownCount);
 
       // Send Start event.
-      motorControl.on_event(Start());
+      motorControl.receive(etl::null_message_router(), Start());
 
       // Now in Running state.
 
@@ -368,8 +369,8 @@ namespace
       CHECK_EQUAL(3, motorControl.common.unknownCount);
 
       // Send unhandled events.
-      motorControl.on_event(Start());
-      motorControl.on_event(Stopped());
+      motorControl.receive(etl::null_message_router(), Start());
+      motorControl.receive(etl::null_message_router(), Stopped());
 
       CHECK_EQUAL(StateId::RUNNING, int(motorControl.get_state_id()));
       CHECK_EQUAL(StateId::RUNNING, int(motorControl.get_state().get_state_id()));
@@ -383,7 +384,7 @@ namespace
       CHECK_EQUAL(5, motorControl.common.unknownCount);
 
       // Send SetSpeed event.
-      motorControl.on_event(SetSpeed(100));
+      motorControl.receive(etl::null_message_router(), SetSpeed(100));
 
       // Still in Running state.
 
@@ -399,7 +400,7 @@ namespace
       CHECK_EQUAL(5, motorControl.common.unknownCount);
 
       // Send Stop event.
-      motorControl.on_event(Stop());
+      motorControl.receive(etl::null_message_router(), Stop());
 
       // Now in WindingDown state.
 
@@ -415,9 +416,9 @@ namespace
       CHECK_EQUAL(5, motorControl.common.unknownCount);
 
       // Send unhandled events.
-      motorControl.on_event(Start());
-      motorControl.on_event(Stop());
-      motorControl.on_event(SetSpeed(100));
+      motorControl.receive(etl::null_message_router(), Start());
+      motorControl.receive(etl::null_message_router(), Stop());
+      motorControl.receive(etl::null_message_router(), SetSpeed(100));
 
       CHECK_EQUAL(StateId::WINDING_DOWN, int(motorControl.get_state_id()));
       CHECK_EQUAL(StateId::WINDING_DOWN, int(motorControl.get_state().get_state_id()));
@@ -431,7 +432,7 @@ namespace
       CHECK_EQUAL(8, motorControl.common.unknownCount);
 
       // Send Stopped event.
-      motorControl.on_event(Stopped());
+      motorControl.receive(etl::null_message_router(), Stopped());
 
       // Now in Idle state.
 
@@ -462,7 +463,7 @@ namespace
       // Now in Idle state.
 
       // Send Start event.
-      motorControl.on_event(Start());
+      motorControl.receive(etl::null_message_router(), Start());
 
       // Now in Running state.
 
@@ -478,7 +479,7 @@ namespace
       CHECK_EQUAL(0, motorControl.common.unknownCount);
 
       // Send emergency Stop event.
-      motorControl.on_event(Stop(true));
+      motorControl.receive(etl::null_message_router(), Stop(true));
 
       // Now in Idle state.
 

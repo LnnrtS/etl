@@ -76,18 +76,14 @@ namespace
   Message4 message4;
   Message5 message5;
 
-  // Router typedefs.
-  typedef etl::imessage_router<int>  int_router_t;
-  typedef etl::imessage_router<void> void_router_t;
-
   //***************************************************************************
   // Router that handles messages 1, 2, 3, 4 and 5 and returns nothing.
   //***************************************************************************
-  class RouterVoid1 : public etl::message_router<RouterVoid1, void, Message1, Message2, Message3, Message4, Message5>
+  class Router1 : public etl::message_router<Router1, Message1, Message2, Message3, Message4, Message5>
   {
   public:
 
-    RouterVoid1()
+    Router1()
       : message1_count(0),
         message2_count(0),
         message3_count(0),
@@ -98,36 +94,36 @@ namespace
 
     }
 
-    void on_receive(void_router_t& sender, const Message1& msg)
+    void on_receive(etl::imessage_router& sender, const Message1& msg)
     {
       ++message1_count;
-      send_to(sender, message5);
+      etl::send_message(sender, message5);
     }
 
-    void on_receive(void_router_t& sender, const Message2& msg)
+    void on_receive(etl::imessage_router& sender, const Message2& msg)
     {
       ++message2_count;
-      send_to(sender, message5);
+      etl::send_message(sender, message5);
     }
 
-    void on_receive(void_router_t& sender, const Message3& msg)
+    void on_receive(etl::imessage_router& sender, const Message3& msg)
     {
       ++message3_count;
-      send_to(sender, message5);
+      etl::send_message(sender, message5);
     }
 
-    void on_receive(void_router_t& sender, const Message4& msg)
+    void on_receive(etl::imessage_router& sender, const Message4& msg)
     {
       ++message4_count;
-      send_to(sender, message5);
+      etl::send_message(sender, message5);
     }
 
-    void on_receive(void_router_t& sender, const Message5& msg)
+    void on_receive(etl::imessage_router& sender, const Message5& msg)
     {
       ++callback_count;
     }
 
-    void on_receive_unknown(void_router_t& sender, const etl::imessage& msg)
+    void on_receive_unknown(etl::imessage_router& sender, const etl::imessage& msg)
     {
       ++message_unknown_count;
     }
@@ -143,11 +139,11 @@ namespace
   //***************************************************************************
   // Router that handles messages 1, 2, 4 and 5 and returns nothing.
   //***************************************************************************
-  class RouterVoid2 : public etl::message_router<RouterVoid2, void, Message1, Message2, Message4, Message5>
+  class Router2 : public etl::message_router<Router2, Message1, Message2, Message4, Message5>
   {
   public:
 
-    RouterVoid2()
+    Router2()
       : message1_count(0),
         message2_count(0),
         message4_count(0),
@@ -157,33 +153,33 @@ namespace
 
     }
 
-    void on_receive(void_router_t& sender, const Message1& msg)
+    void on_receive(etl::imessage_router& sender, const Message1& msg)
     {
       ++message1_count;
-      send_to(sender, message5);
+      etl::send_message(sender, message5);
     }
 
-    void on_receive(void_router_t& sender, const Message2& msg)
+    void on_receive(etl::imessage_router& sender, const Message2& msg)
     {
       ++message2_count;
-      send_to(sender, message5);
+      etl::send_message(sender, message5);
     }
 
-    void on_receive(void_router_t& sender, const Message4& msg)
+    void on_receive(etl::imessage_router& sender, const Message4& msg)
     {
       ++message4_count;
-      send_to(sender, message5);
+      etl::send_message(sender, message5);
     }
 
-    void on_receive(void_router_t& sender, const Message5& msg)
+    void on_receive(etl::imessage_router& sender, const Message5& msg)
     {
       ++callback_count;
     }
 
-    void on_receive_unknown(void_router_t& sender, const etl::imessage& msg)
+    void on_receive_unknown(etl::imessage_router& sender, const etl::imessage& msg)
     {
       ++message_unknown_count;
-      send_to(sender, message5);
+      etl::send_message(sender, message5);
     }
 
     int message1_count;
@@ -193,148 +189,20 @@ namespace
     int callback_count;
   };
 
-  //***************************************************************************
-  // Router that handles messages 1, 2, 3, 4 and 5 and returns an int.
-  //***************************************************************************
-  class RouterInt1 : public etl::message_router<RouterInt1, int, Message1, Message2, Message3, Message4, Message5>
-  {
-  public:
 
-    RouterInt1()
-      : message1_count(0),
-        message2_count(0),
-        message3_count(0),
-        message4_count(0),
-        message_unknown_count(0),
-        callback_count(0)
-    {
-
-    }
-
-    int on_receive(int_router_t& sender, const Message1& msg)
-    {
-      ++message1_count;
-      send_to(sender, message5);
-      return msg.ID;
-    }
-
-    int on_receive(int_router_t& sender, const Message2& msg)
-    {
-      ++message2_count;
-      send_to(sender, message5);
-      return msg.ID;
-    }
-
-    int on_receive(int_router_t& sender, const Message3& msg)
-    {
-      ++message3_count;
-      send_to(sender, message5);
-      return msg.ID;
-    }
-
-    int on_receive(int_router_t& sender, const Message4& msg)
-    {
-      ++message4_count;
-      send_to(sender, message5);
-      return msg.ID;
-    }
-
-    int on_receive(int_router_t& sender, const Message5& msg)
-    {
-      ++callback_count;
-      return msg.ID;
-    }
-
-    int on_receive_unknown(int_router_t& sender, const etl::imessage& msg)
-    {
-      ++message_unknown_count;
-      return msg.get_message_id();
-    }
-
-    int message1_count;
-    int message2_count;
-    int message3_count;
-    int message4_count;
-    int message_unknown_count;
-    int callback_count;
-  };
-
-  //***************************************************************************
-  // Router that handles messages 1, 2, 4 and 5 and returns an int.
-  //***************************************************************************
-  class RouterInt2 : public etl::message_router<RouterInt2, int, Message1, Message2, Message4, Message5>
-  {
-  public:
-
-    RouterInt2()
-      : message1_count(0),
-        message2_count(0),
-        message4_count(0),
-        message_unknown_count(0),
-        callback_count(0)
-    {
-
-    }
-
-    int on_receive(int_router_t& sender, const Message1& msg)
-    {
-      ++message1_count;
-      send_to(sender, message5);
-      return msg.ID;
-    }
-
-    int on_receive(int_router_t& sender, const Message2& msg)
-    {
-      ++message2_count;
-      send_to(sender, message5);
-      return msg.ID;
-    }
-
-    int on_receive(int_router_t& sender, const Message4& msg)
-    {
-      ++message4_count;
-      send_to(sender, message5);
-      return msg.ID;
-    }
-
-    int on_receive(int_router_t& sender, const Message5& msg)
-    {
-      ++callback_count;
-      return msg.ID;
-    }
-
-    int on_receive_unknown(int_router_t& sender, const etl::imessage& msg)
-    {
-      ++message_unknown_count;
-      send_to(sender, message5);
-      return msg.get_message_id();
-    }
-
-    int message1_count;
-    int message2_count;
-    int message4_count;
-    int message_unknown_count;
-    int callback_count;
-  };
-
-  // Null router types.
-  typedef etl::null_message_router<int>  int_null_router_t;
-  typedef etl::null_message_router<void> void_null_router_t;
-
-  void_router_t* p_void_router;
-  int_router_t*  p_int_router;
+  etl::imessage_router* p_router;
 
   SUITE(test_message_router)
   {
     //=========================================================================
-    TEST(message_router_void)
+    TEST(message_router)
     {
-      RouterVoid1 r1;
-      RouterVoid2 r2;
+      Router1 r1;
+      Router2 r2;
 
-      p_void_router = &r1;
+      p_router = &r1;
 
-      p_void_router->receive(r2, message1);
+      p_router->receive(r2, message1);
       CHECK_EQUAL(1, r1.message1_count);
       CHECK_EQUAL(0, r1.message2_count);
       CHECK_EQUAL(0, r1.message3_count);
@@ -342,7 +210,7 @@ namespace
       CHECK_EQUAL(0, r1.message_unknown_count);
       CHECK_EQUAL(1, r2.callback_count);
 
-      p_void_router->receive(r2, message2);
+      p_router->receive(r2, message2);
       CHECK_EQUAL(1, r1.message1_count);
       CHECK_EQUAL(1, r1.message2_count);
       CHECK_EQUAL(0, r1.message3_count);
@@ -350,7 +218,7 @@ namespace
       CHECK_EQUAL(0, r1.message_unknown_count);
       CHECK_EQUAL(2, r2.callback_count);
 
-      p_void_router->receive(r2, message3);
+      p_router->receive(r2, message3);
       CHECK_EQUAL(1, r1.message1_count);
       CHECK_EQUAL(1, r1.message2_count);
       CHECK_EQUAL(1, r1.message3_count);
@@ -358,7 +226,7 @@ namespace
       CHECK_EQUAL(0, r1.message_unknown_count);
       CHECK_EQUAL(3, r2.callback_count);
 
-      p_void_router->receive(r2, message4);
+      p_router->receive(r2, message4);
       CHECK_EQUAL(1, r1.message1_count);
       CHECK_EQUAL(1, r1.message2_count);
       CHECK_EQUAL(1, r1.message3_count);
@@ -366,30 +234,30 @@ namespace
       CHECK_EQUAL(0, r1.message_unknown_count);
       CHECK_EQUAL(4, r2.callback_count);
 
-      p_void_router = &r2;
+      p_router = &r2;
 
-      p_void_router->receive(r1, message1);
+      p_router->receive(r1, message1);
       CHECK_EQUAL(1, r2.message1_count);
       CHECK_EQUAL(0, r2.message2_count);
       CHECK_EQUAL(0, r2.message4_count);
       CHECK_EQUAL(0, r2.message_unknown_count);
       CHECK_EQUAL(1, r1.callback_count);
 
-      p_void_router->receive(r1, message2);
+      p_router->receive(r1, message2);
       CHECK_EQUAL(1, r2.message1_count);
       CHECK_EQUAL(1, r2.message2_count);
       CHECK_EQUAL(0, r2.message4_count);
       CHECK_EQUAL(0, r2.message_unknown_count);
       CHECK_EQUAL(2, r1.callback_count);
 
-      p_void_router->receive(r1, message3);
+      p_router->receive(r1, message3);
       CHECK_EQUAL(1, r2.message1_count);
       CHECK_EQUAL(1, r2.message2_count);
       CHECK_EQUAL(0, r2.message4_count);
       CHECK_EQUAL(1, r2.message_unknown_count);
       CHECK_EQUAL(3, r1.callback_count);
 
-      p_void_router->receive(r1, message4);
+      p_router->receive(r1, message4);
       CHECK_EQUAL(1, r2.message1_count);
       CHECK_EQUAL(1, r2.message2_count);
       CHECK_EQUAL(1, r2.message4_count);
@@ -398,127 +266,56 @@ namespace
     }
 
     //=========================================================================
-    TEST(message_router_int)
+    TEST(message_null_router)
     {
-      RouterInt1 r1;
-      RouterInt2 r2;
-
-      p_int_router = &r1;
-
-      CHECK_EQUAL(int(message1.ID), (p_int_router->receive(r2, message1)));
-      CHECK_EQUAL(1, r1.message1_count);
-      CHECK_EQUAL(0, r1.message2_count);
-      CHECK_EQUAL(0, r1.message3_count);
-      CHECK_EQUAL(0, r1.message4_count);
-      CHECK_EQUAL(0, r1.message_unknown_count);
-      CHECK_EQUAL(1, r2.callback_count);
-
-      CHECK_EQUAL(int(message2.ID), (p_int_router->receive(r2, message2)));
-      CHECK_EQUAL(1, r1.message1_count);
-      CHECK_EQUAL(1, r1.message2_count);
-      CHECK_EQUAL(0, r1.message3_count);
-      CHECK_EQUAL(0, r1.message4_count);
-      CHECK_EQUAL(0, r1.message_unknown_count);
-      CHECK_EQUAL(2, r2.callback_count);
-
-      CHECK_EQUAL(int(message3.ID), (p_int_router->receive(r2, message3)));
-      CHECK_EQUAL(1, r1.message1_count);
-      CHECK_EQUAL(1, r1.message2_count);
-      CHECK_EQUAL(1, r1.message3_count);
-      CHECK_EQUAL(0, r1.message4_count);
-      CHECK_EQUAL(0, r1.message_unknown_count);
-      CHECK_EQUAL(3, r2.callback_count);
-
-      CHECK_EQUAL(int(message4.ID), (p_int_router->receive(r2, message4)));
-      CHECK_EQUAL(1, r1.message1_count);
-      CHECK_EQUAL(1, r1.message2_count);
-      CHECK_EQUAL(1, r1.message3_count);
-      CHECK_EQUAL(1, r1.message4_count);
-      CHECK_EQUAL(0, r1.message_unknown_count);
-      CHECK_EQUAL(4, r2.callback_count);
-
-      p_int_router = &r2;
-
-      CHECK_EQUAL(int(message1.ID), (p_int_router->receive(r1, message1)));
-      CHECK_EQUAL(1, r2.message1_count);
-      CHECK_EQUAL(0, r2.message2_count);
-      CHECK_EQUAL(0, r2.message4_count);
-      CHECK_EQUAL(0, r2.message_unknown_count);
-      CHECK_EQUAL(1, r1.callback_count);
-
-      CHECK_EQUAL(int(message2.ID), (p_int_router->receive(r1, message2)));
-      CHECK_EQUAL(1, r2.message1_count);
-      CHECK_EQUAL(1, r2.message2_count);
-      CHECK_EQUAL(0, r2.message4_count);
-      CHECK_EQUAL(0, r2.message_unknown_count);
-      CHECK_EQUAL(2, r1.callback_count);
-
-      CHECK_EQUAL(int(message3.ID), (p_int_router->receive(r1, message3)));
-      CHECK_EQUAL(1, r2.message1_count);
-      CHECK_EQUAL(1, r2.message2_count);
-      CHECK_EQUAL(0, r2.message4_count);
-      CHECK_EQUAL(1, r2.message_unknown_count);
-      CHECK_EQUAL(3, r1.callback_count);
-
-      CHECK_EQUAL(int(message4.ID), (p_int_router->receive(r1, message4)));
-      CHECK_EQUAL(1, r2.message1_count);
-      CHECK_EQUAL(1, r2.message2_count);
-      CHECK_EQUAL(1, r2.message4_count);
-      CHECK_EQUAL(1, r2.message_unknown_count);
-      CHECK_EQUAL(4, r1.callback_count);
-    }
-
-    //=========================================================================
-    TEST(message_null_router_void)
-    {
-      RouterVoid2 router;
-      void_null_router_t null_router;
+      Router2 router;
+      etl::null_message_router null_router;
 
       // Send from the null router.
-      null_router.send_to(router, message1);
+      etl::send_message(router, message1);
       CHECK_EQUAL(1, router.message1_count);
       CHECK_EQUAL(0, router.message2_count);
       CHECK_EQUAL(0, router.message4_count);
       CHECK_EQUAL(0, router.message_unknown_count);
 
-      null_router.send_to(router, message2);
+      etl::send_message(router, message2);
       CHECK_EQUAL(1, router.message1_count);
       CHECK_EQUAL(1, router.message2_count);
       CHECK_EQUAL(0, router.message4_count);
       CHECK_EQUAL(0, router.message_unknown_count);
 
-      null_router.send_to(router, message3);
+      etl::send_message(router, message3);
       CHECK_EQUAL(1, router.message1_count);
       CHECK_EQUAL(1, router.message2_count);
       CHECK_EQUAL(0, router.message4_count);
       CHECK_EQUAL(1, router.message_unknown_count);
 
-      null_router.send_to(router, message4);
+      etl::send_message(router, message4);
       CHECK_EQUAL(1, router.message1_count);
       CHECK_EQUAL(1, router.message2_count);
       CHECK_EQUAL(1, router.message4_count);
       CHECK_EQUAL(1, router.message_unknown_count);
 
       // Send to the null router.
-      router.send_to(null_router, message1);
+      etl::send_message(null_router, message1);
       CHECK_EQUAL(1, router.message1_count);
       CHECK_EQUAL(1, router.message2_count);
       CHECK_EQUAL(1, router.message4_count);
       CHECK_EQUAL(1, router.message_unknown_count);
 
-      router.send_to(null_router, message2);
+      etl::send_message(null_router, message2);
       CHECK_EQUAL(1, router.message1_count);
       CHECK_EQUAL(1, router.message2_count);
       CHECK_EQUAL(1, router.message4_count);
       CHECK_EQUAL(1, router.message_unknown_count);
 
-      router.send_to(null_router, message3);
+      etl::send_message(null_router, message3);
       CHECK_EQUAL(1, router.message1_count);
       CHECK_EQUAL(1, router.message2_count);
       CHECK_EQUAL(1, router.message4_count);
       CHECK_EQUAL(1, router.message_unknown_count);
 
-      router.send_to(null_router, message4);
+      etl::send_message(null_router, message4);
       CHECK_EQUAL(1, router.message1_count);
       CHECK_EQUAL(1, router.message2_count);
       CHECK_EQUAL(1, router.message4_count);

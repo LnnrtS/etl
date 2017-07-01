@@ -36,23 +36,21 @@ SOFTWARE.
 #include "error_handler.h"
 #include "exception.h"
 #include "user_type.h"
+#include "message_router.h"
 
 #undef ETL_FILE
 #define ETL_FILE "34"
 
 namespace etl
 {
+  /// Allow alternative type for state id.
 #if !defined(ETL_FSM_STATE_ID_TYPE)
     typedef uint_least8_t fsm_state_id_t;
 #else
     typedef ETL_FSM_STATE_ID_TYPE fsm_state_id_t;
 #endif
 
-#if !defined(ETL_FSM_EVENT_ID_TYPE)
-    typedef uint_least8_t fsm_event_id_t;
-#else
-    typedef ETL_FSM_STATE_ID_TYPE fsm_event_id_t;
-#endif
+  typedef etl::imessage::id_t fsm_event_id_t;
 
   //***************************************************************************
   /// Base exception class for FSM.
@@ -107,59 +105,6 @@ namespace etl
   };
 
   //***************************************************************************
-  /// Interface class for FSM events.
-  //***************************************************************************
-  class ifsm_event
-  {
-  public:
-
-    //*******************************************
-    /// Gets the id for this event.
-    //*******************************************
-    etl::fsm_event_id_t get_event_id() const
-    {
-      return event_id;
-    }
-
-  protected:
-
-    //*******************************************
-    /// Constructor.
-    //*******************************************
-    ifsm_event(etl::fsm_event_id_t event_id_)
-      : event_id(event_id_)
-    {
-    }
-
-  private:
-
-    // The event id.
-    const etl::fsm_event_id_t event_id;
-  };
-
-  //***************************************************************************
-  /// Base class for FSM events.
-  //***************************************************************************
-  template <const etl::fsm_event_id_t EVENT_ID_>
-  class fsm_event : public etl::ifsm_event
-  {
-  public:
-
-    enum
-    {
-      EVENT_ID = EVENT_ID_
-    };
-
-    //*******************************************
-    /// Constructor.
-    //*******************************************
-    fsm_event()
-      : ifsm_event(EVENT_ID)
-    {
-    }
-  };
-
-  //***************************************************************************
   /// Interface class for FSM states.
   //***************************************************************************
   class ifsm_state
@@ -176,9 +121,9 @@ namespace etl
       return state_id;
     }
 
-    virtual etl::fsm_state_id_t on_event(const etl::ifsm_event& event) = 0;
-
   protected:
+
+    virtual fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message) = 0;
 
     //*******************************************
     /// Constructor.
@@ -202,7 +147,7 @@ namespace etl
   };
 
   //***************************************************************************
-  class fsm
+  class fsm : public etl::imessage_router
   {
   public:
 
@@ -252,11 +197,17 @@ namespace etl
     }
 
     //*******************************************
-    /// Top level event handler for the FSM.
+    /// Top level message handlers for the FSM.
     //*******************************************
-    void on_event(const etl::ifsm_event& event)
+    void receive(const etl::imessage& message)
     {
-      etl::fsm_state_id_t next_state_id = p_state->on_event(event);
+      receive(etl::null_message_router(), message);
+    }
+
+    void receive(etl::imessage_router& source, const etl::imessage& message)
+    {       
+      etl::fsm_state_id_t next_state_id = p_state->process_event(source, message);
+
       ETL_ASSERT(next_state_id < number_of_states, ETL_ERROR(etl::fsm_state_id_exception));
 
       // Have we changed state?
@@ -371,30 +322,30 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        case T4::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T4&>(event)); break;
-        case T5::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T5&>(event)); break;
-        case T6::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T6&>(event)); break;
-        case T7::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T7&>(event)); break;
-        case T8::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T8&>(event)); break;
-        case T9::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T9&>(event)); break;
-        case T10::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T10&>(event)); break;
-        case T11::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T11&>(event)); break;
-        case T12::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T12&>(event)); break;
-        case T13::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T13&>(event)); break;
-        case T14::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T14&>(event)); break;
-        case T15::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T15&>(event)); break;
-        case T16::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T16&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        case T4::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T4&>(message)); break;
+        case T5::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T5&>(message)); break;
+        case T6::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T6&>(message)); break;
+        case T7::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T7&>(message)); break;
+        case T8::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T8&>(message)); break;
+        case T9::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T9&>(message)); break;
+        case T10::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T10&>(message)); break;
+        case T11::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T11&>(message)); break;
+        case T12::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T12&>(message)); break;
+        case T13::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T13&>(message)); break;
+        case T14::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T14&>(message)); break;
+        case T15::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T15&>(message)); break;
+        case T16::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T16&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -402,7 +353,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 15 event types.
+  // Specialisation for 15 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2, typename T3, typename T4, 
@@ -425,29 +376,29 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        case T4::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T4&>(event)); break;
-        case T5::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T5&>(event)); break;
-        case T6::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T6&>(event)); break;
-        case T7::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T7&>(event)); break;
-        case T8::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T8&>(event)); break;
-        case T9::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T9&>(event)); break;
-        case T10::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T10&>(event)); break;
-        case T11::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T11&>(event)); break;
-        case T12::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T12&>(event)); break;
-        case T13::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T13&>(event)); break;
-        case T14::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T14&>(event)); break;
-        case T15::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T15&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        case T4::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T4&>(message)); break;
+        case T5::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T5&>(message)); break;
+        case T6::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T6&>(message)); break;
+        case T7::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T7&>(message)); break;
+        case T8::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T8&>(message)); break;
+        case T9::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T9&>(message)); break;
+        case T10::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T10&>(message)); break;
+        case T11::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T11&>(message)); break;
+        case T12::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T12&>(message)); break;
+        case T13::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T13&>(message)); break;
+        case T14::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T14&>(message)); break;
+        case T15::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T15&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -455,7 +406,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 14 event types.
+  // Specialisation for 14 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2, typename T3, typename T4, 
@@ -478,28 +429,28 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        case T4::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T4&>(event)); break;
-        case T5::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T5&>(event)); break;
-        case T6::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T6&>(event)); break;
-        case T7::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T7&>(event)); break;
-        case T8::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T8&>(event)); break;
-        case T9::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T9&>(event)); break;
-        case T10::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T10&>(event)); break;
-        case T11::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T11&>(event)); break;
-        case T12::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T12&>(event)); break;
-        case T13::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T13&>(event)); break;
-        case T14::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T14&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        case T4::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T4&>(message)); break;
+        case T5::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T5&>(message)); break;
+        case T6::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T6&>(message)); break;
+        case T7::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T7&>(message)); break;
+        case T8::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T8&>(message)); break;
+        case T9::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T9&>(message)); break;
+        case T10::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T10&>(message)); break;
+        case T11::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T11&>(message)); break;
+        case T12::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T12&>(message)); break;
+        case T13::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T13&>(message)); break;
+        case T14::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T14&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -507,7 +458,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 13 event types.
+  // Specialisation for 13 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2, typename T3, typename T4, 
@@ -530,27 +481,27 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        case T4::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T4&>(event)); break;
-        case T5::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T5&>(event)); break;
-        case T6::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T6&>(event)); break;
-        case T7::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T7&>(event)); break;
-        case T8::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T8&>(event)); break;
-        case T9::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T9&>(event)); break;
-        case T10::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T10&>(event)); break;
-        case T11::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T11&>(event)); break;
-        case T12::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T12&>(event)); break;
-        case T13::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T13&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        case T4::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T4&>(message)); break;
+        case T5::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T5&>(message)); break;
+        case T6::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T6&>(message)); break;
+        case T7::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T7&>(message)); break;
+        case T8::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T8&>(message)); break;
+        case T9::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T9&>(message)); break;
+        case T10::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T10&>(message)); break;
+        case T11::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T11&>(message)); break;
+        case T12::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T12&>(message)); break;
+        case T13::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T13&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -558,7 +509,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 12 event types.
+  // Specialisation for 12 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2, typename T3, typename T4, 
@@ -580,26 +531,26 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        case T4::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T4&>(event)); break;
-        case T5::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T5&>(event)); break;
-        case T6::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T6&>(event)); break;
-        case T7::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T7&>(event)); break;
-        case T8::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T8&>(event)); break;
-        case T9::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T9&>(event)); break;
-        case T10::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T10&>(event)); break;
-        case T11::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T11&>(event)); break;
-        case T12::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T12&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        case T4::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T4&>(message)); break;
+        case T5::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T5&>(message)); break;
+        case T6::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T6&>(message)); break;
+        case T7::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T7&>(message)); break;
+        case T8::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T8&>(message)); break;
+        case T9::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T9&>(message)); break;
+        case T10::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T10&>(message)); break;
+        case T11::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T11&>(message)); break;
+        case T12::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T12&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -607,7 +558,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 11 event types.
+  // Specialisation for 11 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2, typename T3, typename T4, 
@@ -629,25 +580,25 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        case T4::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T4&>(event)); break;
-        case T5::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T5&>(event)); break;
-        case T6::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T6&>(event)); break;
-        case T7::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T7&>(event)); break;
-        case T8::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T8&>(event)); break;
-        case T9::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T9&>(event)); break;
-        case T10::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T10&>(event)); break;
-        case T11::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T11&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        case T4::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T4&>(message)); break;
+        case T5::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T5&>(message)); break;
+        case T6::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T6&>(message)); break;
+        case T7::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T7&>(message)); break;
+        case T8::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T8&>(message)); break;
+        case T9::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T9&>(message)); break;
+        case T10::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T10&>(message)); break;
+        case T11::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T11&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -655,7 +606,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 10 event types.
+  // Specialisation for 10 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2, typename T3, typename T4, 
@@ -677,24 +628,24 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        case T4::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T4&>(event)); break;
-        case T5::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T5&>(event)); break;
-        case T6::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T6&>(event)); break;
-        case T7::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T7&>(event)); break;
-        case T8::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T8&>(event)); break;
-        case T9::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T9&>(event)); break;
-        case T10::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T10&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        case T4::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T4&>(message)); break;
+        case T5::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T5&>(message)); break;
+        case T6::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T6&>(message)); break;
+        case T7::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T7&>(message)); break;
+        case T8::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T8&>(message)); break;
+        case T9::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T9&>(message)); break;
+        case T10::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T10&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -702,7 +653,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 9 event types.
+  // Specialisation for 9 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2, typename T3, typename T4, 
@@ -724,23 +675,23 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        case T4::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T4&>(event)); break;
-        case T5::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T5&>(event)); break;
-        case T6::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T6&>(event)); break;
-        case T7::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T7&>(event)); break;
-        case T8::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T8&>(event)); break;
-        case T9::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T9&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        case T4::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T4&>(message)); break;
+        case T5::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T5&>(message)); break;
+        case T6::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T6&>(message)); break;
+        case T7::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T7&>(message)); break;
+        case T8::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T8&>(message)); break;
+        case T9::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T9&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -748,7 +699,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 8 event types.
+  // Specialisation for 8 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2, typename T3, typename T4, 
@@ -769,22 +720,22 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        case T4::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T4&>(event)); break;
-        case T5::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T5&>(event)); break;
-        case T6::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T6&>(event)); break;
-        case T7::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T7&>(event)); break;
-        case T8::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T8&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        case T4::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T4&>(message)); break;
+        case T5::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T5&>(message)); break;
+        case T6::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T6&>(message)); break;
+        case T7::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T7&>(message)); break;
+        case T8::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T8&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -792,7 +743,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 7 event types.
+  // Specialisation for 7 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2, typename T3, typename T4, 
@@ -813,21 +764,21 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        case T4::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T4&>(event)); break;
-        case T5::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T5&>(event)); break;
-        case T6::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T6&>(event)); break;
-        case T7::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T7&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        case T4::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T4&>(message)); break;
+        case T5::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T5&>(message)); break;
+        case T6::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T6&>(message)); break;
+        case T7::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T7&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -835,7 +786,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 6 event types.
+  // Specialisation for 6 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2, typename T3, typename T4, 
@@ -856,20 +807,20 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        case T4::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T4&>(event)); break;
-        case T5::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T5&>(event)); break;
-        case T6::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T6&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        case T4::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T4&>(message)); break;
+        case T5::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T5&>(message)); break;
+        case T6::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T6&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -877,7 +828,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 5 event types.
+  // Specialisation for 5 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2, typename T3, typename T4, 
@@ -898,19 +849,19 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        case T4::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T4&>(event)); break;
-        case T5::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T5&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        case T4::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T4&>(message)); break;
+        case T5::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T5&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -918,7 +869,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 4 event types.
+  // Specialisation for 4 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2, typename T3, typename T4>
@@ -938,18 +889,18 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        case T4::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T4&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        case T4::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T4&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -957,7 +908,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 3 event types.
+  // Specialisation for 3 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2, typename T3>
@@ -977,17 +928,17 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        case T3::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T3&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        case T3::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T3&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -995,7 +946,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 2 event types.
+  // Specialisation for 2 message types.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1, typename T2>
@@ -1015,16 +966,16 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        case T2::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T2&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        case T2::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T2&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;
@@ -1032,7 +983,7 @@ namespace etl
   };
 
   //***************************************************************************
-  // Specialisation for 1 event type.
+  // Specialisation for 1 message type.
   //***************************************************************************
   template <typename TState, const etl::fsm_state_id_t STATE_ID_, 
             typename T1>
@@ -1052,15 +1003,15 @@ namespace etl
     {
     }
 
-    etl::fsm_state_id_t on_event(const etl::ifsm_event& event)
+    etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)
     {
       etl::fsm_state_id_t new_state_id;
-      etl::fsm_event_id_t event_id = event.get_event_id();
+      etl::fsm_event_id_t event_id = message.get_message_id();
 
       switch (event_id)
       {
-        case T1::EVENT_ID: new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T1&>(event)); break;
-        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(event); break;
+        case T1::ID: new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T1&>(message)); break;
+        default: new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message); break;
       }
 
       return new_state_id;

@@ -36,23 +36,21 @@ SOFTWARE.
 #include "error_handler.h"
 #include "exception.h"
 #include "user_type.h"
+#include "message_router.h"
 
 #undef ETL_FILE
 #define ETL_FILE "34"
 
 namespace etl
 {
+  /// Allow alternative type for state id.
 #if !defined(ETL_FSM_STATE_ID_TYPE)
     typedef uint_least8_t fsm_state_id_t;
 #else
     typedef ETL_FSM_STATE_ID_TYPE fsm_state_id_t;
 #endif
 
-#if !defined(ETL_FSM_EVENT_ID_TYPE)
-    typedef uint_least8_t fsm_event_id_t;
-#else
-    typedef ETL_FSM_STATE_ID_TYPE fsm_event_id_t;
-#endif
+  typedef etl::imessage::id_t fsm_event_id_t;
 
   //***************************************************************************
   /// Base exception class for FSM.
@@ -107,59 +105,6 @@ namespace etl
   };
 
   //***************************************************************************
-  /// Interface class for FSM events.
-  //***************************************************************************
-  class ifsm_event
-  {
-  public:
-
-    //*******************************************
-    /// Gets the id for this event.
-    //*******************************************
-    etl::fsm_event_id_t get_event_id() const
-    {
-      return event_id;
-    }
-
-  protected:
-
-    //*******************************************
-    /// Constructor.
-    //*******************************************
-    ifsm_event(etl::fsm_event_id_t event_id_)
-      : event_id(event_id_)
-    {
-    }
-
-  private:
-
-    // The event id.
-    const etl::fsm_event_id_t event_id;
-  };
-
-  //***************************************************************************
-  /// Base class for FSM events.
-  //***************************************************************************
-  template <const etl::fsm_event_id_t EVENT_ID_>
-  class fsm_event : public etl::ifsm_event
-  {
-  public:
-
-    enum
-    {
-      EVENT_ID = EVENT_ID_
-    };
-
-    //*******************************************
-    /// Constructor.
-    //*******************************************
-    fsm_event()
-      : ifsm_event(EVENT_ID)
-    {
-    }
-  };
-
-  //***************************************************************************
   /// Interface class for FSM states.
   //***************************************************************************
   class ifsm_state
@@ -176,9 +121,9 @@ namespace etl
       return state_id;
     }
 
-    virtual etl::fsm_state_id_t on_event(const etl::ifsm_event& event) = 0;
-
   protected:
+
+    virtual fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message) = 0;
 
     //*******************************************
     /// Constructor.
@@ -202,7 +147,7 @@ namespace etl
   };
 
   //***************************************************************************
-  class fsm
+  class fsm : public etl::imessage_router
   {
   public:
 
@@ -252,11 +197,17 @@ namespace etl
     }
 
     //*******************************************
-    /// Top level event handler for the FSM.
+    /// Top level message handlers for the FSM.
     //*******************************************
-    void on_event(const etl::ifsm_event& event)
+    void receive(const etl::imessage& message)
     {
-      etl::fsm_state_id_t next_state_id = p_state->on_event(event);
+      receive(etl::null_message_router(), message);
+    }
+
+    void receive(etl::imessage_router& source, const etl::imessage& message)
+    {       
+      etl::fsm_state_id_t next_state_id = p_state->process_event(source, message);
+
       ETL_ASSERT(next_state_id < number_of_states, ETL_ERROR(etl::fsm_state_id_exception));
 
       // Have we changed state?
@@ -381,19 +332,19 @@ namespace etl
   cog.outl("  {")
   cog.outl("  }")
   cog.outl("")
-  cog.outl("  etl::fsm_state_id_t on_event(const etl::ifsm_event& event)")
+  cog.outl("  etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)")
   cog.outl("  {")
   cog.outl("    etl::fsm_state_id_t new_state_id;")
-  cog.outl("    etl::fsm_event_id_t event_id = event.get_event_id();")
+  cog.outl("    etl::fsm_event_id_t event_id = message.get_message_id();")
   cog.outl("")
   cog.outl("    switch (event_id)")
   cog.outl("    {")
   for n in range(1, int(Handlers) + 1):
-      cog.out("      case T%d::EVENT_ID:" % n)
-      cog.out(" new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T%d&>(event));" % n)
+      cog.out("      case T%d::ID:" % n)
+      cog.out(" new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T%d&>(message));" % n)
       cog.outl(" break;")
   cog.out("      default:")
-  cog.out(" new_state_id = static_cast<TState*>(this)->on_event_unknown(event);")
+  cog.out(" new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message);")
   cog.outl(" break;")
   cog.outl("    }")
   cog.outl("")
@@ -408,9 +359,9 @@ namespace etl
       cog.outl("")
       cog.outl("//***************************************************************************")
       if n == 1:
-          cog.outl("// Specialisation for %d event type." % n)
+          cog.outl("// Specialisation for %d message type." % n)
       else:
-          cog.outl("// Specialisation for %d event types." % n)
+          cog.outl("// Specialisation for %d message types." % n)
       cog.outl("//***************************************************************************")
       cog.outl("template <typename TState, const etl::fsm_state_id_t STATE_ID_, ")
       cog.out("          ")
@@ -449,19 +400,19 @@ namespace etl
       cog.outl("  {")
       cog.outl("  }")
       cog.outl("")
-      cog.outl("  etl::fsm_state_id_t on_event(const etl::ifsm_event& event)")
+      cog.outl("  etl::fsm_state_id_t process_event(etl::imessage_router& source, const etl::imessage& message)")
       cog.outl("  {")
       cog.outl("    etl::fsm_state_id_t new_state_id;")
-      cog.outl("    etl::fsm_event_id_t event_id = event.get_event_id();")
+      cog.outl("    etl::fsm_event_id_t event_id = message.get_message_id();")
       cog.outl("")
       cog.outl("    switch (event_id)")
       cog.outl("    {")
       for n in range(1, n + 1):
-          cog.out("      case T%d::EVENT_ID:" % n)
-          cog.out(" new_state_id = static_cast<TState*>(this)->on_event(static_cast<const T%d&>(event));" % n)
+          cog.out("      case T%d::ID:" % n)
+          cog.out(" new_state_id = static_cast<TState*>(this)->on_event(source, static_cast<const T%d&>(message));" % n)
           cog.outl(" break;")
       cog.out("      default:")
-      cog.out(" new_state_id = static_cast<TState*>(this)->on_event_unknown(event);")
+      cog.out(" new_state_id = static_cast<TState*>(this)->on_event_unknown(source, message);")
       cog.outl(" break;")
       cog.outl("    }")
       cog.outl("")
