@@ -44,7 +44,7 @@ namespace etl
   class imessage
   {
   public:
-    
+
     virtual ~imessage() {}
     virtual etl::message_id_t get_message_id() const = 0;
   };
@@ -60,6 +60,7 @@ namespace etl
       ID = ID_
     };
 
+    //*******************************************
     etl::message_id_t get_message_id() const
     {
       return etl::message_id_t(ID);
@@ -70,17 +71,19 @@ namespace etl
   class imessage_router
   {
   public:
+
     virtual ~imessage_router() {}
     virtual void receive(const etl::imessage& message) = 0;
     virtual void receive(imessage_router& source, const etl::imessage& message) = 0;
-
     virtual bool accepts(etl::message_id_t id) const = 0;
-    
+
+    //*******************************************
     bool accepts(const etl::imessage& msg) const
     {
       return accepts(msg.get_message_id());
     }
 
+    //*******************************************
     void send_message(imessage_router& destination,
                       const etl::imessage& message)
     {
@@ -96,17 +99,27 @@ namespace etl
   {
   public:
 
+    //*******************************************
     void receive(const etl::imessage& message)
     {
     }
 
+    //*******************************************
     void receive(etl::imessage_router& source, const etl::imessage& message)
     {
     }
 
+    //*******************************************
     bool accepts(etl::message_id_t id) const
     {
       return false;
+    }
+
+    //*******************************************
+    static null_message_router& get()
+    {
+      static null_message_router instance;
+      return instance;
     }
   };
 
@@ -114,7 +127,7 @@ namespace etl
   /// Send a message to a router.
   /// Sets the 'sender' to etl::null_message_router type.
   //***************************************************************************
-  inline static void send_message(etl::imessage_router& destination, 
+  inline static void send_message(etl::imessage_router& destination,
                                   const etl::imessage&  message)
   {
     destination.receive(message);
@@ -123,23 +136,23 @@ namespace etl
   //***************************************************************************
   /// Send a message to a router.
   //***************************************************************************
-  inline static void send_message(etl::imessage_router& source, 
-                                  etl::imessage_router& destination, 
+  inline static void send_message(etl::imessage_router& source,
+                                  etl::imessage_router& destination,
                                   const etl::imessage&  message)
   {
     destination.receive(source, message);
   }
-  
+
   //***************************************************************************
   // To generate to header file, run this at the command line.
   // Note: You will need Python and COG installed.
   //
-  // python -m cogapp -d -e -omessage_router.h -DHandlers=<n> message_router_generator.h 
+  // python -m cogapp -d -e -omessage_router.h -DHandlers=<n> message_router_generator.h
   // Where <n> is the number of messages to support.
   //
   // e.g.
   // To generate handlers for up to 16 messages...
-  // python -m cogapp -d -e -omessage_router.h -DHandlers=16 message_router_generator.h 
+  // python -m cogapp -d -e -omessage_router.h -DHandlers=16 message_router_generator.h
   //
   // See CreateMessageProcessor.bat
   //***************************************************************************
@@ -172,8 +185,7 @@ namespace etl
       cog.outl("")
       cog.outl("  void receive(const etl::imessage& msg)")
       cog.outl("  {")
-      cog.outl("    etl::null_message_router nmr;")
-      cog.outl("    receive(nmr, msg);")
+      cog.outl("    receive(etl::null_message_router::get(), msg);")
       cog.outl("  }")
       cog.outl("")
       cog.outl("  void receive(etl::imessage_router& source, const etl::imessage& msg)")
@@ -246,8 +258,7 @@ namespace etl
           cog.outl("")
           cog.outl("  void receive(const etl::imessage& msg)")
           cog.outl("  {")
-          cog.outl("    etl::null_message_router nmr;")
-          cog.outl("    receive(nmr, msg);")
+          cog.outl("    receive(etl::null_message_router::get(), msg);")
           cog.outl("  }")
           cog.outl("")
           cog.outl("  void receive(etl::imessage_router& source, const etl::imessage& msg)")

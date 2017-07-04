@@ -269,7 +269,6 @@ namespace
     TEST(message_null_router)
     {
       Router2 router;
-      etl::null_message_router null_router;
 
       // Send from the null router.
       etl::send_message(router, message1);
@@ -297,25 +296,25 @@ namespace
       CHECK_EQUAL(1, router.message_unknown_count);
 
       // Send to the null router.
-      etl::send_message(null_router, message1);
+      etl::send_message(etl::null_message_router::get(), message1);
       CHECK_EQUAL(1, router.message1_count);
       CHECK_EQUAL(1, router.message2_count);
       CHECK_EQUAL(1, router.message4_count);
       CHECK_EQUAL(1, router.message_unknown_count);
 
-      etl::send_message(null_router, message2);
+      etl::send_message(etl::null_message_router::get(), message2);
       CHECK_EQUAL(1, router.message1_count);
       CHECK_EQUAL(1, router.message2_count);
       CHECK_EQUAL(1, router.message4_count);
       CHECK_EQUAL(1, router.message_unknown_count);
 
-      etl::send_message(null_router, message3);
+      etl::send_message(etl::null_message_router::get(), message3);
       CHECK_EQUAL(1, router.message1_count);
       CHECK_EQUAL(1, router.message2_count);
       CHECK_EQUAL(1, router.message4_count);
       CHECK_EQUAL(1, router.message_unknown_count);
 
-      etl::send_message(null_router, message4);
+      etl::send_message(etl::null_message_router::get(), message4);
       CHECK_EQUAL(1, router.message1_count);
       CHECK_EQUAL(1, router.message2_count);
       CHECK_EQUAL(1, router.message4_count);
